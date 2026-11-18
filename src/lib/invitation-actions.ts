@@ -12,6 +12,8 @@ const createSchema = z.object({
   label: z.string().trim().min(2).max(80),
   lifetimeDays: z.coerce.number().int().min(1).max(90),
   maxUses: z.union([z.literal(''), z.coerce.number().int().min(1).max(10000)]),
+  allowMediaView: z.enum(['on']).optional(),
+  allowMediaUpload: z.enum(['on']).optional(),
 });
 
 /** Host-only invitation creation; token is displayed once and stored only as SHA-256 hash. */
@@ -19,7 +21,7 @@ export async function createInvitationLinkAction(form: FormData) {
   const user = await requireUser();
   const input = createSchema.safeParse(Object.fromEntries(form));
   if (!input.success) throw new Error('Invalid invitation settings');
-  const { eventId, label, lifetimeDays, maxUses } = input.data;
+  const { eventId, label, lifetimeDays, maxUses, allowMediaView, allowMediaUpload } = input.data;
   const event = await requireEventAccess(eventId, user.id, 'owner');
   if (event.status !== 'PUBLISHED') throw new Error('Publish your event before sharing an invitation');
   const count = await db.invitationLink.count({ where: { eventId, revokedAt: null } });
@@ -28,6 +30,7 @@ export async function createInvitationLinkAction(form: FormData) {
   await db.invitationLink.create({ data: {
     eventId, createdById: user.id, label, tokenHash: hashInvitationToken(raw),
     expiresAt: new Date(Date.now() + lifetimeDays * 86400000), maxUses: maxUses === '' ? null : maxUses,
+    allowMediaView: allowMediaView === 'on' || allowMediaUpload === 'on', allowMediaUpload: allowMediaUpload === 'on',
   }});
   revalidatePath(`/dashboard/events/${eventId}`);
   // Only redirect the owner to the secret once. Do not add this URL to logs or analytics.

@@ -5,7 +5,8 @@ import { guestIdentity } from '@/lib/guest';
 import { db } from '@/lib/db';
 import { rupees, dateLabel } from '@/lib/format';
 import { reserveGiftAction, cancelReservationAction, submitRSVPAction } from '@/lib/actions';
-import { canAccessEvent } from '@/lib/invitations';
+import { canAccessEvent, canAccessMedia } from '@/lib/invitations';
+import { MemoryUploader } from '@/components/memory-uploader';
 
 type RouteProps = {
   params: Promise<{ slug: string }>;
@@ -32,6 +33,13 @@ export default async function GuestEvent({ params, searchParams }: RouteProps) {
   });
   if (!event || !(await canAccessEvent(event))) notFound();
   const myRSVP = event.guests[0];
+  const mediaViewAllowed = await canAccessMedia(event, 'view');
+  const mediaUploadAllowed = await canAccessMedia(event, 'upload');
+  const approvedMedia = mediaViewAllowed ? await db.media.findMany({
+    where: { eventId: event.id, status: 'APPROVED', uploadedAt: { not: null } },
+    orderBy: { createdAt: 'desc' }, take: 48,
+    select: { id: true, fileName: true, mimeType: true, album: true },
+  }) : [];
 
   return <main>
     <section className="hero" style={{ padding: '48px 0' }}><div className="wrap">
@@ -82,6 +90,7 @@ export default async function GuestEvent({ params, searchParams }: RouteProps) {
         <p className="tiny">Only the event host and authorized co-hosts should see your RSVP details. This RSVP is linked to your browser.</p>
       </div>
     </div></section>
+    {(mediaViewAllowed || mediaUploadAllowed) && <section className="section" id="memories"><div className="wrap"><div className="card"><span className="eyebrow">PRIVATE FAMILY GALLERY ♡</span><h2>Shared Memories 🌸</h2><p className="muted">Only guests invited to this private gallery can view approved memories. Uploads are reviewed by the event owner.</p>{mediaUploadAllowed && <MemoryUploader eventId={event.id}/>}<div className="grid">{approvedMedia.map(item => <article className="card" key={item.id}><div className="pill-icon">{item.mimeType.startsWith('video/') ? '🎬' : '🌸'}</div><h3>{item.fileName}</h3><p className="muted">{item.album}</p><a className="button" href={'/api/memories/'+item.id+'/view'} target="_blank" rel="noopener noreferrer">Open memory →</a></article>)}</div>{approvedMedia.length === 0 && <p className="muted">No approved memories yet.</p>}</div></div></section>}
     <section className="section"><div className="wrap"><p className="muted">Hosting your own celebration? <Link href="/events/new" className="clickable">Create a free registry →</Link></p></div></section>
   </main>;
 }

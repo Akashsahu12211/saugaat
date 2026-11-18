@@ -1,4 +1,4 @@
-# Saugaat — Full-stack Development (Milestones 1–4)
+# Saugaat — Full-stack Development (Milestones 1–5)
 
 A premium festive, India-first gift registry and event platform built on Next.js 16, React 19, TypeScript, Prisma 7 and PostgreSQL. This is **an early development milestone**, not the entire finished startup.
 
@@ -38,7 +38,7 @@ The personal-account GitHub connection is authorized and the development source 
 ## Security & limitations
 - Published registries require a host-issued **revocable, expiring invitation token**. Token hashes are stored at rest; server-side access checks run for guest views and mutations. QR and WhatsApp sharing require a user click.
 - A newly issued invitation link is shown to its creator only on the creation redirect. Treat its URL as a secret; sharing gives access to the registry, **not** to Shared Memories.
-- Shared Memories, email/WhatsApp notification delivery, payment processing and platform administration are **not yet implemented**. Notification opt-in choices only record preferences.
+- Email/WhatsApp notification delivery, payment processing and platform administration are **not yet implemented**. Notification opt-in choices only record preferences.
 - Email verification, password reset, API rate limiting, bot protection, audit logging, account export/delete, data retention and comprehensive privacy controls remain required before public beta.
 - Dependencies must be installed, Prisma schema applied, and database concurrency tests completed before claiming a working production app.
 - Set `NEXT_PUBLIC_SITE_URL` to the trusted HTTPS origin for deployed QR links; do not commit production credentials.
@@ -56,10 +56,13 @@ The personal-account GitHub connection is authorized and the development source 
 2. **Guest flow (source drafted):** anonymous reservation, cancellation, RSVP; real concurrency and abuse testing required.
 3. **Co-hosts and tracking (source drafted):** role-based access, invites, gift quantity and purchase tracking.
 4. **Secure invitations (source drafted):** expiring/revocable links, QR codes, WhatsApp click-to-share and notification preferences; database verification pending.
-5. **Private Shared Memories (planned):** authorized private uploads, signed URLs, moderation, albums, deletion and storage limits.
+5. **Private Shared Memories (code drafted):** private S3-compatible upload intents, signed URLs, owner approval, album labels, deletion and basic limits; see `docs/MILESTONE_5.md`. Live storage testing pending.
 6. **Group gifting (planned):** Indian authorized payment provider, reconciled webhooks, refunds and audit trail.
 7. **Admin and analytics (planned):** moderation, restrictive staff permissions, privacy-protecting metrics.
 8. **Testing and launch (planned):** CI passing, integration and performance tests, security review, backups, beta deployment.
 
 ## Design reference
 The existing editable Figma file for the broader UI design is: https://www.figma.com/design/HShkzcRZEXfrUnlM75cQNl . Final visual polish and clickable prototype may still be pending.
+
+## Milestone 5 - Private Shared Memories
+See `docs/MILESTONE_5.md` for bucket configuration, upload/privacy mechanics and remaining security gates. Never use a public-read storage bucket.

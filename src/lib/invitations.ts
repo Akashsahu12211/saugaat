@@ -60,3 +60,29 @@ export async function canAccessEvent(event: EventAccess): Promise<boolean> {
     return Boolean(valid);
   } catch { return false; }
 }
+
+/** Invitations grant registry access only unless the owner separately enables media privileges. */
+export async function canAccessMedia(event: EventAccess, action: 'view' | 'upload'): Promise<boolean> {
+  const user = await getUser();
+  if (user?.id === event.ownerId) return true;
+  if (user) {
+    const member = await db.eventMember.findUnique({
+      where: { eventId_userId: { eventId: event.id, userId: user.id } }, select: { id: true },
+    });
+    if (member) return true;
+  }
+  if (event.status !== 'PUBLISHED' || event.visibility !== 'LINK_ONLY') return false;
+  const signed = (await cookies()).get(cookieName(event.id))?.value;
+  if (!signed) return false;
+  try {
+    const { payload } = await jwtVerify(signed, key(), {
+      algorithms: ['HS256'], issuer: 'saugaat-invitations', audience: 'saugaat-event-guest',
+    });
+    if (payload.eventId !== event.id || typeof payload.invitationLinkId !== 'string') return false;
+    const link = await db.invitationLink.findFirst({
+      where: { id: payload.invitationLinkId, eventId: event.id, revokedAt: null, expiresAt: { gt: new Date() } },
+      select: { allowMediaView: true, allowMediaUpload: true },
+    });
+    return Boolean(link && (action === 'view' ? link.allowMediaView : link.allowMediaUpload));
+  } catch { return false; }
+}

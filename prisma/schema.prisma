@@ -155,15 +155,22 @@ model Guest {
 model Media {
   id        String      @id @default(cuid())
   eventId   String
-  uploaderId String
-  storageKey String
+  uploaderId String?
+  visitorId String?
+  storageKey String     @unique
   mimeType  String
-  album     String?
+  sizeBytes Int
+  fileName  String     @db.VarChar(160)
+  album     String     @default("Moments") @db.VarChar(60)
   status    MediaStatus @default(PENDING)
+  uploadedAt DateTime?
+  uploadExpiresAt DateTime
+  reviewedAt DateTime?
   event     Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  uploader  User        @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  uploader  User?      @relation(fields: [uploaderId], references: [id], onDelete: SetNull)
   createdAt DateTime    @default(now())
-  @@index([eventId, status])
+  @@index([eventId, status, uploadedAt])
+  @@index([visitorId, eventId])
 }
 
 
@@ -179,6 +186,8 @@ model InvitationLink {
   maxUses     Int?
   useCount    Int       @default(0)
   revokedAt   DateTime?
+  allowMediaView Boolean @default(false)
+  allowMediaUpload Boolean @default(false)
   createdAt   DateTime  @default(now())
   event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
   createdBy   User      @relation("LinkIssuer", fields: [createdById], references: [id], onDelete: Cascade)
