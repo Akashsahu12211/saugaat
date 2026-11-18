@@ -35,6 +35,65 @@ jobs:
       - run: npm run typecheck
       - run: npm run build
 
+  migration-baseline-rehearsal:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: saugaat
+          POSTGRES_PASSWORD: test-only-password
+          POSTGRES_DB: saugaat_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U saugaat -d saugaat_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://saugaat:test-only-password@localhost:5432/saugaat_test?schema=public
+      SESSION_SECRET: ci-test-secret-only-not-for-real-users-0123456789abcdef
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.18.0'
+      - run: npm install
+      - run: npm run db:generate
+      # Emulate the existing Saugaat staging state: tables pre-date Prisma history.
+      - run: npx prisma db push
+      - name: Verify the database has schema but no Prisma migration history
+        run: |
+          node - <<'NODE'
+          const { Client } = require('pg');
+          (async () => {
+            const db = new Client({ connectionString: process.env.DATABASE_URL });
+            await db.connect();
+            try {
+              const { rows } = await db.query("SELECT (SELECT count(*)::int FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE') AS tables, (SELECT count(*)::int FROM information_schema.tables WHERE table_schema='public' AND table_name='_prisma_migrations') AS history");
+              if (rows[0].tables !== 16 || rows[0].history !== 0) throw Error('Wrong pre-baseline database state');
+              console.log('Existing schema confirmed; Prisma history absent');
+            } finally { await db.end(); }
+          })().catch(e => { console.error(e.message); process.exitCode = 1; });
+          NODE
+      - run: npx prisma migrate resolve --applied 20261118_init
+      - run: npx prisma migrate status
+      - name: Verify baseline recorded exactly once
+        run: |
+          node - <<'NODE'
+          const { Client } = require('pg');
+          (async () => {
+            const db = new Client({ connectionString: process.env.DATABASE_URL });
+            await db.connect();
+            try {
+              const { rows } = await db.query("SELECT migration_name, finished_at IS NOT NULL AS applied FROM _prisma_migrations");
+              if (rows.length !== 1 || rows[0].migration_name !== '20261118_init' || !rows[0].applied) throw Error('Prisma migration baseline not recorded once');
+              console.log('Official migration baseline verified');
+            } finally { await db.end(); }
+          })().catch(e => { console.error(e.message); process.exitCode = 1; });
+          NODE
+
   browser-smoke:
     runs-on: ubuntu-latest
     needs: verify
