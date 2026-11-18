@@ -52,6 +52,7 @@ model User {
   notificationPreferences NotificationPreference?
   reservations  Reservation[]
   media         Media[]
+  contributions Contribution[]
 }
 
 model Event {
@@ -73,6 +74,8 @@ model Event {
   gifts       Gift[]
   reservations Reservation[]
   media       Media[]
+  funds       GiftFund[]
+  contributions Contribution[]
   guests      Guest[]
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
@@ -115,6 +118,7 @@ model Gift {
   priority     Int      @default(2)
   quantity     Int      @default(1)
   reservations Reservation[]
+  fund         GiftFund?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   @@index([eventId])
@@ -201,4 +205,61 @@ model NotificationPreference {
   emailUpdates Boolean  @default(false)
   whatsappUpdates Boolean @default(false)
   updatedAt    DateTime @updatedAt
+}
+
+
+// A pledge is NOT a payment. No funds move until approved compliant provider onboarding.
+enum FundStatus {
+  OPEN
+  CLOSED
+}
+enum ContributionStatus {
+  PLEDGED
+  PAYMENT_PENDING
+  PAID
+  FAILED
+  REFUND_PENDING
+  REFUNDED
+  CANCELLED
+}
+model GiftFund {
+  id            String      @id @default(cuid())
+  eventId       String
+  giftId        String      @unique
+  targetPaise   Int
+  status        FundStatus  @default(OPEN)
+  event         Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  gift          Gift        @relation(fields: [giftId], references: [id], onDelete: Cascade)
+  contributions Contribution[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  @@index([eventId, status])
+}
+model Contribution {
+  id              String             @id @default(cuid())
+  fundId          String
+  eventId         String
+  visitorId       String?
+  guestUserId     String?
+  amountPaise     Int
+  currency        String             @default("INR") @db.VarChar(3)
+  status          ContributionStatus @default(PLEDGED)
+  providerOrderId String?            @unique @db.VarChar(100)
+  providerPaymentId String?          @unique @db.VarChar(100)
+  paidAt          DateTime?
+  refundedAt      DateTime?
+  fund            GiftFund           @relation(fields: [fundId], references: [id], onDelete: Cascade)
+  event           Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  guest           User?              @relation(fields: [guestUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  @@index([fundId, status])
+  @@index([visitorId, fundId])
+}
+model PaymentWebhookReceipt {
+  id              String   @id @default(cuid())
+  provider        String   @default("RAZORPAY_TEST")
+  providerEventId String   @unique @db.VarChar(130)
+  eventType       String   @db.VarChar(80)
+  receivedAt      DateTime @default(now())
 }
