@@ -42,18 +42,18 @@ test('new host can sign up and create a private draft event', async ({ page }) =
   await page.getByLabel('Email').fill(`saugaat-e2e-${unique}@example.test`);
   await page.getByLabel('Password (10+ characters)').fill(`SaugaatTesting!${unique}`);
   await page.getByRole('button', { name: /Create account/i }).click();
-  await expect(page).toHaveURL(/\\/dashboard(?:\\?|$)/);
+  await expect(page).toHaveURL(/\/dashboard(?:\?|$)/);
   await expect(page.getByRole('heading', { name: /Namaste, Saugaat Test Host/i })).toBeVisible();
 
   await page.getByRole('link', { name: /Create Event/i }).first().click();
-  await expect(page).toHaveURL(/\\/events\\/new/);
+  await expect(page).toHaveURL(/\/events\/new/);
   await page.getByLabel('Occasion').selectOption('Birthday');
   await page.getByLabel('Event name').fill(eventTitle);
   await page.getByLabel('Event date').fill('2027-06-01');
   await page.getByLabel('City or venue (optional)').fill('Delhi');
   await page.getByRole('button', { name: /Create Event/i }).click();
 
-  await expect(page).toHaveURL(/\\/dashboard\\/events\\/[a-z0-9]+(?:\\?|$)/);
+  await expect(page).toHaveURL(/\/dashboard\/events\/[a-z0-9]+(?:\?|$)/);
   await expect(page.getByRole('heading', { name: eventTitle })).toBeVisible();
   await expect(page.getByText(/DRAFT/).first()).toBeVisible();
 });
