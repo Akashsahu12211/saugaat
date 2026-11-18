@@ -9,15 +9,16 @@ import { canAccessEvent, canAccessMedia } from '@/lib/invitations';
 import { MemoryUploader } from '@/components/memory-uploader';
 import { pledgeAction, cancelPledgeAction } from '@/lib/group-gifting-actions';
 import { contributionTotals } from '@/lib/group-gifting';
+import { submitAbuseReportAction } from '@/lib/report-actions';
 
 type RouteProps = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ error?: string; success?: string; pledged?: string }>;
+  searchParams: Promise<{ error?: string; success?: string; pledged?: string; reported?: string }>;
 };
 
 export default async function GuestEvent({ params, searchParams }: RouteProps) {
   const { slug } = await params;
-  const { error, success, pledged } = await searchParams;
+  const { error, success, pledged, reported } = await searchParams;
   const user = await getUser();
   const visitor = await guestIdentity();
   const event = await db.event.findUnique({
@@ -123,6 +124,19 @@ export default async function GuestEvent({ params, searchParams }: RouteProps) {
       </div>
     </div></section>
     {(mediaViewAllowed || mediaUploadAllowed) && <section className="section" id="memories"><div className="wrap"><div className="card"><span className="eyebrow">PRIVATE FAMILY GALLERY ♡</span><h2>Shared Memories 🌸</h2><p className="muted">Only guests invited to this private gallery can view approved memories. Uploads are reviewed by the event owner.</p>{mediaUploadAllowed && <MemoryUploader eventId={event.id}/>}<div className="grid">{approvedMedia.map(item => <article className="card" key={item.id}><div className="pill-icon">{item.mimeType.startsWith('video/') ? '🎬' : '🌸'}</div><h3>{item.fileName}</h3><p className="muted">{item.album}</p><a className="button" href={'/api/memories/'+item.id+'/view'} target="_blank" rel="noopener noreferrer">Open memory →</a></article>)}</div>{approvedMedia.length === 0 && <p className="muted">No approved memories yet.</p>}</div></div></section>}
+    <section className="section"><div className="wrap"><div className="card" style={{maxWidth:640}}>
+      <h2>Report a privacy or safety concern</h2>
+      <p className="muted">Only guests with an active invitation can submit a private report.</p>
+      {reported && <p role="status" className="success">Report received. Thank you.</p>}
+      <form action={submitAbuseReportAction}>
+        <input type="hidden" name="eventId" value={event.id}/>
+        <div className="field"><label htmlFor="reportReason">Reason</label>
+          <select id="reportReason" name="reason" required><option value="PRIVACY">Privacy concern</option><option value="INAPPROPRIATE_MEDIA">Inappropriate media</option>
+            <option value="SPAM">Spam</option><option value="OTHER">Other</option></select></div>
+        <div className="field"><label htmlFor="reportDetails">Details (optional)</label>
+          <textarea id="reportDetails" name="details" maxLength={600}/></div>
+        <button type="submit" className="button ghost">Submit report</button>
+      </form></div></div></section>
     <section className="section"><div className="wrap"><p className="muted">Hosting your own celebration? <Link href="/events/new" className="clickable">Create a free registry →</Link></p></div></section>
   </main>;
 }

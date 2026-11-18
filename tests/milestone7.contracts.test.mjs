@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+const schema=read('prisma/schema.prisma');
+const a=read('src/lib/admin.ts');
+const r=read('src/lib/report-actions.ts');
+const m=read('src/lib/admin-actions.ts');
+test('separate platform role model, fail-closed auth',()=>{assert.match(schema,/model AdminAccount/);assert.match(schema,/enum AdminRole/);assert.match(a,/db\.adminAccount\.findUnique/);assert.match(a,/notFound\(\)/);});
+test('event invite required to file a report',()=>{assert.match(r,/canAccessEvent\(event\)/);assert.match(r,/id: mediaId, eventId, status: 'APPROVED'/);assert.match(r,/persistGuestIdentity/);});
+test('abuse report limits and pseudonymization',()=>{assert.match(r,/createHmac\('sha256'/);assert.match(r,/recent >= 3/);assert.match(schema,/reporterFingerprint/);});
+test('moderation writes audit atomically',()=>{assert.match(m,/requirePlatformRole\('moderate'\)/);assert.match(m,/db\.\$transaction/);assert.match(m,/tx\.adminAuditLog\.create/);assert.match(m,/status: 'REJECTED'/);});
+test('restricted UI includes queue, operations and audit',()=>{for(const p of ['src/app/admin/layout.tsx','src/app/admin/page.tsx','src/app/admin/reports/page.tsx','src/app/admin/events/page.tsx','src/app/admin/audit/page.tsx'])assert.ok(read(p).length>100);});
+test('pure policy validation',async()=>{const p=await import('../src/lib/admin-policy.ts');assert.equal(p.parseReportInput('PRIVACY',' hi ').details,'hi');assert.throws(()=>p.parseReportInput('BAD',''));assert.equal(p.validReportDecision('ACTIONED'),true);assert.equal(p.validReportDecision('APPROVE'),false);});

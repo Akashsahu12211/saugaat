@@ -66,3 +66,7 @@ The existing editable Figma file for the broader UI design is: https://www.figma
 
 ## Milestone 5 - Private Shared Memories
 See `docs/MILESTONE_5.md` for bucket configuration, upload/privacy mechanics and remaining security gates. Never use a public-read storage bucket.
+
+## Milestone 7 — Operations & moderation
+
+Role-controlled admin pages, report moderation, event aggregates and audit records. See [docs/MILESTONE_7.md](docs/MILESTONE_7.md). Live production security checks remain pending.
