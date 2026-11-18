@@ -10,7 +10,10 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
-    "test": "node --experimental-strip-types --test tests/*.test.mjs"
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "preflight": "node --experimental-strip-types scripts/preflight.mjs",
+    "preflight:production": "node --experimental-strip-types scripts/preflight.mjs --production",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "next": "^16.4.6",
@@ -36,6 +39,7 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@types/pg": "^8.15.0",
-    "@types/qrcode": "^1.5.5"
+    "@types/qrcode": "^1.5.5",
+    "@playwright/test": "^1.57.0"
   }
 }
