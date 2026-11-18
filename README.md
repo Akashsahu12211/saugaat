@@ -1,4 +1,4 @@
-# Saugaat — Full-stack Development Starter (Milestones 1–3)
+# Saugaat — Full-stack Development (Milestones 1–4)
 
 A premium festive, India-first gift registry and event platform built on Next.js 16, React 19, TypeScript, Prisma 7 and PostgreSQL. This is **an early development milestone**, not the entire finished startup.
 
