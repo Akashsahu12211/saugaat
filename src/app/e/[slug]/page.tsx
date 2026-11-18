@@ -7,15 +7,17 @@ import { rupees, dateLabel } from '@/lib/format';
 import { reserveGiftAction, cancelReservationAction, submitRSVPAction } from '@/lib/actions';
 import { canAccessEvent, canAccessMedia } from '@/lib/invitations';
 import { MemoryUploader } from '@/components/memory-uploader';
+import { pledgeAction, cancelPledgeAction } from '@/lib/group-gifting-actions';
+import { contributionTotals } from '@/lib/group-gifting';
 
 type RouteProps = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ error?: string; success?: string }>;
+  searchParams: Promise<{ error?: string; success?: string; pledged?: string }>;
 };
 
 export default async function GuestEvent({ params, searchParams }: RouteProps) {
   const { slug } = await params;
-  const { error, success } = await searchParams;
+  const { error, success, pledged } = await searchParams;
   const user = await getUser();
   const visitor = await guestIdentity();
   const event = await db.event.findUnique({
@@ -23,7 +25,7 @@ export default async function GuestEvent({ params, searchParams }: RouteProps) {
     include: {
       gifts: {
         orderBy: { createdAt: 'asc' },
-        include: { reservations: {
+        include: { fund: { include: { contributions: { select: { id: true, amountPaise: true, status: true, visitorId: true, guestUserId: true } } } }, reservations: {
           where: { status: { in: ['RESERVED', 'PURCHASED'] } },
           select: { id: true, visitorId: true, guestUserId: true, status: true },
         } },
@@ -74,6 +76,36 @@ export default async function GuestEvent({ params, searchParams }: RouteProps) {
       })}</div>
       {!event.gifts.length && <div className="card no-data">The host is still creating their wishlist. Check back soon!</div>}
       <p className="tiny">To cancel an anonymous reservation, use the same browser. Clearing cookies may remove access to that reservation. Purchases happen on the retailer website, not through Saugaat.</p>
+    </div></section>
+    <section className="section" id="group-gifting"><div className="wrap">
+      <h2>Group gifting ♡</h2>
+      <p className="section-sub">Save a pledge toward a larger gift. No money is collected by Saugaat at this stage.</p>
+      {pledged === '1' && <p role="status" className="success">Pledge recorded — not a payment receipt.</p>}
+      <div className="grid">{event.gifts.filter(g => g.fund?.status === 'OPEN').map(g => {
+        const fund = g.fund!;
+        const totals = contributionTotals(fund.contributions);
+        const mine = fund.contributions.filter(c => c.status === 'PLEDGED' &&
+          (c.visitorId === visitor.id || (!!user && c.guestUserId === user.id)));
+        return <article className="card" key={fund.id}>
+          <h3>{g.title}</h3>
+          <p>Goal: {rupees(fund.targetPaise)}</p>
+          <p>Pledged (not paid): {rupees(totals.pledgedPaise)}</p>
+          <p>Verified collected: {rupees(totals.paidPaise)}</p>
+          <p className="tiny">Payment checkout is disabled. No UPI payment is requested.</p>
+          {event.ownerId !== user?.id && <form action={pledgeAction}>
+            <input type="hidden" name="fundId" value={fund.id}/>
+            <div className="field"><label htmlFor={'pledge-'+fund.id}>Pledge amount ₹</label>
+              <input id={'pledge-'+fund.id} name="amount" type="number" min="1" max="9999999.99" step="0.01" required/></div>
+            <button type="submit" className="button">Save my pledge</button>
+          </form>}
+          {mine.map(c => <form key={c.id} action={cancelPledgeAction}>
+            <input type="hidden" name="eventSlug" value={event.slug}/>
+            <input type="hidden" name="contributionId" value={c.id}/>
+            <p className="tiny">My pledge: {rupees(c.amountPaise)}</p>
+            <button type="submit" className="button ghost">Cancel pledge</button>
+          </form>)}
+        </article>;
+      })}</div>
     </div></section>
     <section className="section" id="rsvp"><div className="wrap">
       <div className="card" style={{maxWidth: 620, margin: 'auto'}}>
