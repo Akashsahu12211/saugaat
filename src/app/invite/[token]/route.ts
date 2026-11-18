@@ -32,7 +32,13 @@ export async function GET(req: NextRequest, context: { params: Promise<{token: s
     status: 410, headers: { 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' },
   });
   await establishInvitationAccess(link.eventId, link.id, link.expiresAt);
-  const response = NextResponse.redirect(new URL(`/e/${link.event.slug}`, req.url), 303);
+  // Keep the guest on the exact origin where the invitation cookie was set.
+  // A relative Location header avoids hostname normalization (localhost vs 127.0.0.1)
+  // and prevents credentials from leaking to an untrusted Host header.
+  const response = new NextResponse(null, {
+    status: 303,
+    headers: { Location: `/e/${encodeURIComponent(link.event.slug)}` },
+  });
   response.headers.set('Referrer-Policy', 'no-referrer');
   response.headers.set('Cache-Control', 'no-store');
   return response;
