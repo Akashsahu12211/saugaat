@@ -1,0 +1,1 @@
+import Link from 'next/link'; export default function NotFound() { return <main className="section"><div className="wrap no-data"><h1 className="heading">This celebration isn’t available</h1><p>The event may be private, unpublished or the link may be incorrect.</p><Link href="/" className="button">Go home</Link></div></main>; }

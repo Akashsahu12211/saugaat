@@ -1,0 +1,195 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EventVisibility {
+  PRIVATE
+  LINK_ONLY
+}
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+enum ReservationStatus {
+  RESERVED
+  PURCHASED
+  CANCELLED
+  EXPIRED
+}
+enum MediaStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+enum RSVPStatus {
+  PENDING
+  ATTENDING
+  DECLINED
+}
+
+enum EventRole {
+  HOST
+  COHOST
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  passwordHash  String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  events        Event[]  @relation("EventOwner")
+  membership    EventMember[]
+  sentInvites    EventInvite[] @relation("InvitedBy")
+  issuedLinks    InvitationLink[] @relation("LinkIssuer")
+  notificationPreferences NotificationPreference?
+  reservations  Reservation[]
+  media         Media[]
+}
+
+model Event {
+  id          String          @id @default(cuid())
+  slug        String          @unique
+  title       String
+  description String?         @db.VarChar(1500)
+  occasion    String
+  location    String?
+  date        DateTime
+  visibility  EventVisibility @default(PRIVATE)
+  status      EventStatus     @default(DRAFT)
+  accessCodeHash String?
+  ownerId     String
+  owner       User            @relation("EventOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members     EventMember[]
+  invitations EventInvite[]
+  invitationLinks InvitationLink[]
+  gifts       Gift[]
+  reservations Reservation[]
+  media       Media[]
+  guests      Guest[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  @@index([ownerId])
+}
+
+model EventMember {
+  id       String    @id @default(cuid())
+  eventId  String
+  userId   String
+  role     EventRole @default(COHOST)
+  event    Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  @@unique([eventId, userId])
+  @@index([userId])
+}
+
+model EventInvite {
+  id          String   @id @default(cuid())
+  eventId     String
+  email       String
+  invitedById String
+  event       Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  invitedBy   User     @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  @@unique([eventId, email])
+  @@index([email])
+}
+
+model Gift {
+  id           String   @id @default(cuid())
+  eventId      String
+  event        Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  title        String
+  url          String?
+  pricePaise   Int?
+  category     String?
+  note         String?
+  priority     Int      @default(2)
+  quantity     Int      @default(1)
+  reservations Reservation[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  @@index([eventId])
+}
+
+model Reservation {
+  id          String            @id @default(cuid())
+  giftId      String
+  eventId     String
+  guestUserId String?
+  visitorId   String?
+  gift        Gift              @relation(fields: [giftId], references: [id], onDelete: Cascade)
+  event       Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  guest       User?             @relation(fields: [guestUserId], references: [id], onDelete: SetNull)
+  status      ReservationStatus @default(RESERVED)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  @@index([giftId, status])
+  @@index([giftId, visitorId, status])
+  @@index([eventId])
+}
+
+model Guest {
+  id        String   @id @default(cuid())
+  eventId   String
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  name      String
+  email     String?
+  rsvp      RSVPStatus @default(PENDING)
+  visitorId String?
+  partySize Int       @default(1)
+  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  @@index([eventId])
+  @@unique([eventId, visitorId])
+}
+
+model Media {
+  id        String      @id @default(cuid())
+  eventId   String
+  uploaderId String
+  storageKey String
+  mimeType  String
+  album     String?
+  status    MediaStatus @default(PENDING)
+  event     Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  uploader  User        @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+  createdAt DateTime    @default(now())
+  @@index([eventId, status])
+}
+
+
+/// Invitation links are *bearer capabilities*: their raw token is never persisted.
+/// Revocation and expiry are checked on every guest request and mutation.
+model InvitationLink {
+  id          String    @id @default(cuid())
+  eventId     String
+  createdById String
+  label       String    @db.VarChar(80)
+  tokenHash   String    @unique @db.VarChar(64)
+  expiresAt   DateTime
+  maxUses     Int?
+  useCount    Int       @default(0)
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  createdBy   User      @relation("LinkIssuer", fields: [createdById], references: [id], onDelete: Cascade)
+  @@index([eventId, revokedAt])
+}
+
+/// Opt-in choices only; no automated messages are sent by this milestone.
+model NotificationPreference {
+  userId       String   @id
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailUpdates Boolean  @default(false)
+  whatsappUpdates Boolean @default(false)
+  updatedAt    DateTime @updatedAt
+}

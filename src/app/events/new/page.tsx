@@ -1,0 +1,8 @@
+import { requireUser } from '@/lib/auth';
+import { createEventAction } from '@/lib/actions';
+export default async function NewEvent({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  await requireUser();
+  const { error } = await searchParams;
+  const occasions = ['Wedding','Engagement','Birthday','Baby Shower','Housewarming','Anniversary','Naamkaran','Graduation','Retirement','Other'];
+  return <main><div className="form-card card"><span className="eyebrow">STEP 1 / YOUR OCCASION</span><h1>Create a celebration</h1><p className="muted">Let’s make your event feel special ♡</p>{error && <p className="error">{error}</p>}<form action={createEventAction}><div className="field"><label htmlFor="occasion">Occasion</label><select id="occasion" name="occasion" required>{occasions.map(x=><option key={x}>{x}</option>)}</select></div><div className="field"><label htmlFor="title">Event name</label><input id="title" name="title" placeholder="Rahul & Priya’s Wedding" required maxLength={120}/></div><div className="field"><label htmlFor="date">Event date</label><input id="date" type="date" name="date" required/></div><div className="field"><label htmlFor="location">City or venue (optional)</label><input id="location" name="location" placeholder="New Delhi" maxLength={120}/></div><div className="field"><label htmlFor="description">A sweet note (optional)</label><textarea id="description" name="description" maxLength={1500}/></div><p className="tiny">🔒 Your event starts as a private draft. Publish it when ready.</p><button type="submit" className="button">Create Event →</button></form></div></main>;
+}
