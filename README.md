@@ -29,17 +29,19 @@ npm run db:generate
 npm run db:migrate
 npm run dev
 ```
-Open http://localhost:3000. Sign up, create an event, add gifts, publish, and open the guest link in an incognito browser to test no-login reservations and RSVP.
+Open http://localhost:3000. Sign up, create an event, add gifts, publish, then generate a secure invite (with a QR code) in the event dashboard. Open that invite in an incognito browser to test account-free reservations and RSVP.
 
 ## GitHub integration
-The linked GitHub App currently only has access to a different organization; writes to this personal repository return 403. Connect the personal account and grant access to the `saugaat` repository before asking the assistant to push changes. The ZIP can also be imported manually via Git.
+Repository: https://github.com/Akashsahu12211/saugaat
+The personal-account GitHub connection is authorized and the development source has been committed to `main`.
 
 ## Security & limitations
-- **MVP note**: A published registry is accessible by its unguessable share link; it is not invitation-authenticated. Shared Memories are **not implemented** yet; privacy enforcement must be added before uploads launch.
-- Real UPI payments, group gifting, photo/video storage, co-host invitation email delivery, email verification, reset-password, rate limiting, bot protection, audit logging, account export/delete and stronger invitation access are **not yet implemented**. Do not collect real money or sensitive guest data with this starter.
-- Dev server requires PostgreSQL and environment variables. Error/status handling should be extended to user-friendly messages.
-- Before deploying, configure email verification, rate limits, HTTPS, monitoring, migrations and a production database. Seek appropriate payments/privacy compliance review for India.
-- Demo credentials are **not shipped**; create a user locally.
+- Published registries require a host-issued **revocable, expiring invitation token**. Token hashes are stored at rest; server-side access checks run for guest views and mutations. QR and WhatsApp sharing require a user click.
+- A newly issued invitation link is shown to its creator only on the creation redirect. Treat its URL as a secret; sharing gives access to the registry, **not** to Shared Memories.
+- Shared Memories, email/WhatsApp notification delivery, payment processing and platform administration are **not yet implemented**. Notification opt-in choices only record preferences.
+- Email verification, password reset, API rate limiting, bot protection, audit logging, account export/delete, data retention and comprehensive privacy controls remain required before public beta.
+- Dependencies must be installed, Prisma schema applied, and database concurrency tests completed before claiming a working production app.
+- Set `NEXT_PUBLIC_SITE_URL` to the trusted HTTPS origin for deployed QR links; do not commit production credentials.
 
 ## Architecture
 - `src/app`: page routes and React server components
@@ -50,13 +52,14 @@ The linked GitHub App currently only has access to a different organization; wri
 - `src/app/globals.css`: Saugaat festive design tokens and responsive styles
 
 ## Full roadmap
-1. Foundation (initial source): auth, events, dashboard, registry.
-2. Guest flow (source implemented, untested against DB): anonymous reservation, cancellation and RSVP. OTP / abuse prevention and invite-based access remain pending.
-3. Co-host invites, gift quantity/priority/category editing, manual purchase tracking (source implemented; requires DB tests).
-4. Memories: private object storage, short-lived signed URLs, moderation, media processing, delete/export.
-5. Group gifting: authorized gateway and compliant host disbursements, reconciliation and refund states.
-6. Growth: WhatsApp opt-in notifications, merchant affiliate program, Hindi localization, analytics.
-7. Production: automated tests, CI, security review, backups, uptime and accessibility/performance testing.
+1. **Foundation (source drafted):** auth, events, dashboard, registry.
+2. **Guest flow (source drafted):** anonymous reservation, cancellation, RSVP; real concurrency and abuse testing required.
+3. **Co-hosts and tracking (source drafted):** role-based access, invites, gift quantity and purchase tracking.
+4. **Secure invitations (source drafted):** expiring/revocable links, QR codes, WhatsApp click-to-share and notification preferences; database verification pending.
+5. **Private Shared Memories (planned):** authorized private uploads, signed URLs, moderation, albums, deletion and storage limits.
+6. **Group gifting (planned):** Indian authorized payment provider, reconciled webhooks, refunds and audit trail.
+7. **Admin and analytics (planned):** moderation, restrictive staff permissions, privacy-protecting metrics.
+8. **Testing and launch (planned):** CI passing, integration and performance tests, security review, backups, beta deployment.
 
 ## Design reference
 The existing editable Figma file for the broader UI design is: https://www.figma.com/design/HShkzcRZEXfrUnlM75cQNl . Final visual polish and clickable prototype may still be pending.
