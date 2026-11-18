@@ -81,7 +81,7 @@ test('published invitation supports guest RSVP and gift reservation', async ({ p
 
   await page.getByLabel('Gift name').fill(giftTitle);
   await page.getByRole('button', { name: /Add to Registry/i }).click();
-  await expect(page.getByText(giftTitle)).toBeVisible();
+  await expect(page.getByText(giftTitle).first()).toBeVisible();
   await page.getByRole('button', { name: /Publish event/i }).click();
   await page.getByLabel('Maximum uses (optional)').fill('5');
   await page.getByRole('button', { name: /Create secure invite/i }).click();
