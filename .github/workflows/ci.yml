@@ -29,7 +29,8 @@ jobs:
           node-version: '22.18.0'
       - run: npm install
       - run: npm run db:generate
-      - run: npx prisma db push
+      - run: npx prisma migrate deploy
+      - run: npx prisma migrate status
       - run: npm test
       - run: npm run typecheck
       - run: npm run build
@@ -64,7 +65,8 @@ jobs:
           node-version: '22.18.0'
       - run: npm install
       - run: npx prisma generate
-      - run: npx prisma db push
+      - run: npx prisma migrate deploy
+      - run: npx prisma migrate status
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - if: failure()
