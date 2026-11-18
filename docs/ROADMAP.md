@@ -1,38 +1,30 @@
-# Saugaat engineering delivery plan — eight milestones
+# Saugaat engineering roadmap — source and launch status
 
-## Status legend
-- **Source drafted**: code exists locally but may not pass full integration tests.
-- **Verified**: automated tests, acceptance check and security review have passed.
-- **Released**: deployed and monitored for pilot users.
+## Legend
+- **CI verified**: source exists and the automated test / typecheck / build jobs previously passed. This does NOT verify real cloud integrations or production security.
+- **Cloud verification pending**: requires a configured environment, data and end-to-end acceptance checks.
+- **Released**: working HTTPS deployment, monitored with backups and completed acceptance checks.
 
-| Milestone | Deliverable | Current state | Completion gate |
+| Milestone | Deliverable | Current status | Outstanding release gate |
 | --- | --- | --- | --- |
-| 1 | Project setup, auth, users, event editor, dashboard | Source drafted | App boots, migrates database, host event test passes |
-| 2 | No-login guest registry, quantity-safe reservations and RSVP | Source drafted | PostgreSQL race tests, anonymous cookie/session tests, mobile UX |
-| 3 | Co-host roles, invitation and gift tracking | Source drafted; DB verification pending | Cross-tenant authorization tests; gift purchase-state rules |
-| 4 | WhatsApp sharing, QR, revocable invitations and notification preferences | Source drafted; unverified against production DB | Invitation security + consent tests |
-| 5 | Private Shared Memories uploads, moderation, albums, deletion | Planned | Signed media URLs, permission and privacy tests |
-| 6 | Indian provider-backed group gifting | Planned — requires approval | Reconciled webhook, failed payment, refund, KYC and audit tests |
-| 7 | Admin moderation, analytics and abuse management | Planned | Restrictive roles, audit trails, privacy review |
-| 8 | CI, full regression, deployment and beta pilot | Planned | Mobile accessibility, security, backup, load testing, monitored pilot |
+| 1 | Auth, users, host event creator, dashboard | Source implemented; CI verified | Managed DB, signup / event creation walkthrough, rate limits and account recovery |
+| 2 | Anonymous guest registry, reservations and RSVP | Source implemented; CI verified | PostgreSQL concurrency and real-user browser tests |
+| 3 | Co-hosts, invites and gift tracking | Source implemented; CI verified | Cross-event permission and purchase-state integration tests |
+| 4 | WhatsApp share links, QR, revocable guest access | Source implemented; CI verified | Revocation, consent and expiry in staging |
+| 5 | Private Shared Memories, media review and downloads | Source implemented; CI verified | Private object storage, upload/download, scanning and deletion tests |
+| 6 | Group gifting and pledge bookkeeping | Pledges and test-mode webhook foundations; CI verified | Merchant/provider approval, hosted checkout, refund/reconciliation; live payments disabled |
+| 7 | Admin moderation, reports and analytics | Source implemented; CI verified | Admin provisioning, abuse workflow and audit review against staging |
+| 8 | CI, preflight, browser-smoke, staging | CI and browser-smoke previously verified; **deployment pending** | Vercel + Neon, reviewed migrations, operational security and pilot |
 
-## Non-negotiable product constraints
-- India-first and WhatsApp-first, mobile browser before native applications.
-- All occasions supported through templates and custom event details.
-- No guest account required to view a public invitation registry.
-- Media is private by default and never exposed from an unverified link.
-- Direct retailer checkout is separate from Saugaat; group payments remain disabled until a compliant provider is integrated.
-- No real payment success status without provider confirmation.
+## Important security and product constraints
+- India-first and WhatsApp-first, mobile web before native apps.
+- Never expose guest media without verified permission; private albums default to private.
+- Avoid duplicate gift reservations through transactional database rules.
+- Guest contributions remain pledges unless a real provider event verifies payment.
+- Payments must remain disabled pending legal and financial compliance.
+- No secrets, invitation tokens, payment credentials or private photographs in source control.
+- Admin roles are provisioned server-side; guests cannot promote themselves.
+- A passing CI build is **not** a staging deployment.
 
-## Data and permission notes
-- Guest reservation currently uses a long-lived, signed pseudonymous browser cookie; clearing browser data can lose cancellation rights.
-- Host sees names and attendance; public event page does not display other people's RSVP details.
-- Guest input validation and authorization happen on the server; public mutation rate limiting remains a pre-pilot requirement.
-- PRIVATE is the draft/default event visibility; on publishing, the *registry* becomes LINK_ONLY while *media* remains separately gated.
-- Public repository never stores credentials, private photographs or end-user details.
-
-## Next verification and action
-1. Grant GitHub App write access to `Akashsahu12211/saugaat` personal repo.
-2. Run `npm install && npm run db:generate && npx prisma db push && npm run typecheck && npm run build` with Node 22.18+/24 and PostgreSQL.
-3. Add a real Postgres concurrency test for simultaneous reservations on quantity=1.
-4. Keep Milestone 3–8 open until accepted and demonstrated.
+## Next action — staging setup
+See [docs/STAGING_DEPLOYMENT.md](STAGING_DEPLOYMENT.md) for exact deployment prerequisites and acceptance checklist. Vercel and Neon connections require repository-owner authorization. The current CI uses ephemeral `prisma db push`; production needs reviewed migrations and `prisma migrate deploy` before launch.
