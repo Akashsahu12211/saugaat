@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 import { clearSession, createSession, getUser, requireUser } from '@/lib/auth';
+import { allowAuthAttempt } from '@/lib/auth-throttle';
 import { credentials, signup, eventInput, giftInput, rsvpInput, cohostInviteInput, giftSettingsInput } from '@/lib/validation';
 import { requireEventAccess } from '@/lib/permissions';
 import { guestIdentity, persistGuestIdentity } from '@/lib/guest';
@@ -18,6 +19,7 @@ export async function registerAction(form: FormData) {
   const parsed = signup.safeParse(Object.fromEntries(form));
   if (!parsed.success) withMessage('/signup', 'Enter a valid name, email and password (10+ characters).');
   const { name, email, password } = parsed.data;
+  if (!(await allowAuthAttempt('signup', email))) withMessage('/signup', 'Too many attempts. Please try again in 15 minutes.');
   if (await db.user.findUnique({ where: { email } })) withMessage('/signup', 'Email is already registered.');
   const user = await db.user.create({ data: { name, email, passwordHash: await bcrypt.hash(password, 12) } });
   await createSession(user.id);
@@ -26,6 +28,7 @@ export async function registerAction(form: FormData) {
 export async function loginAction(form: FormData) {
   const parsed = credentials.safeParse(Object.fromEntries(form));
   if (!parsed.success) withMessage('/login', 'Invalid email or password.');
+  if (!(await allowAuthAttempt('login', parsed.data.email))) withMessage('/login', 'Too many attempts. Please try again in 15 minutes.');
   const user = await db.user.findUnique({ where: { email: parsed.data.email } });
   if (!user || !(await bcrypt.compare(parsed.data.password, user.passwordHash))) withMessage('/login', 'Invalid email or password.');
   await createSession(user.id);
