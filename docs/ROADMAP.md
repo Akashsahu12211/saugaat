@@ -1,30 +1,43 @@
-# Saugaat engineering roadmap — source and launch status
+# Saugaat engineering roadmap — verified status (19 Nov 2026)
 
-## Legend
-- **CI verified**: source exists and the automated test / typecheck / build jobs previously passed. This does NOT verify real cloud integrations or production security.
-- **Cloud verification pending**: requires a configured environment, data and end-to-end acceptance checks.
-- **Released**: working HTTPS deployment, monitored with backups and completed acceptance checks.
+## Status definitions
+- **Implemented** means the relevant application code exists.
+- **CI passed** means a GitHub Actions job validated fresh PostgreSQL migrations, automated tests, typecheck, build and/or browser flows. It does not certify cloud security, payments, media storage or launch readiness.
+- **Staging ready** means a protected Preview deployment is READY and health endpoints have returned HTTP 200. This is not a public production launch.
 
-| Milestone | Deliverable | Current status | Outstanding release gate |
+| Milestone | Scope | Code status | Remaining release gate |
 | --- | --- | --- | --- |
-| 1 | Auth, users, host event creator, dashboard | Source implemented; CI verified | Managed DB, signup / event creation walkthrough, rate limits and account recovery |
-| 2 | Anonymous guest registry, reservations and RSVP | Source implemented; CI verified | PostgreSQL concurrency and real-user browser tests |
-| 3 | Co-hosts, invites and gift tracking | Source implemented; CI verified | Cross-event permission and purchase-state integration tests |
-| 4 | WhatsApp share links, QR, revocable guest access | Source implemented; CI verified | Revocation, consent and expiry in staging |
-| 5 | Private Shared Memories, media review and downloads | Source implemented; CI verified | Private object storage, upload/download, scanning and deletion tests |
-| 6 | Group gifting and pledge bookkeeping | Pledges and test-mode webhook foundations; CI verified | Merchant/provider approval, hosted checkout, refund/reconciliation; live payments disabled |
-| 7 | Admin moderation, reports and analytics | Source implemented; CI verified | Admin provisioning, abuse workflow and audit review against staging |
-| 8 | CI, preflight, browser-smoke, staging | CI and browser-smoke previously verified; **deployment pending** | Vercel + Neon, reviewed migrations, operational security and pilot |
+| M1 | Signup, login, host dashboard, event creation | Implemented; CI tested | Password reset, rate limiting, account removal, managed-staging real browser tests |
+| M2 | Guest registry, RSVP, gift reservations | Implemented; CI browser tested | Managed-staging reservation concurrency and abuse tests |
+| M3 | Co-hosts and gift tracking | Implemented | Cross-event role/permission and purchase-state tests |
+| M4 | WhatsApp share links, QR and revocable invitations | Implemented; invite flow CI tested | Staging revocation/expiry and misuse tests |
+| M5 | Private Shared Memories and moderation | Implemented with uploads safety-disabled | Neon private bucket credential wiring, signed upload compatibility, CORS, quarantine/malware scans, deletion and guest-access QA |
+| M6 | Group gifting | Pledge bookkeeping implemented, no real payment collection | Provider onboarding, payment reconciliation, refund/dispute operations, financial/legal compliance |
+| M7 | Admin reports and moderation | Implemented | Admin provisioning, audit logging and abuse handling in staging |
+| M8 | CI, preflight and protected staging preview | Implemented; CI passed, Preview READY | Finish actual migration-history baseline, backup restore drill, operational security, real staging acceptance and launch gate |
 
-## Important security and product constraints
-- India-first and WhatsApp-first, mobile web before native apps.
-- Never expose guest media without verified permission; private albums default to private.
-- Avoid duplicate gift reservations through transactional database rules.
-- Guest contributions remain pledges unless a real provider event verifies payment.
-- Payments must remain disabled pending legal and financial compliance.
-- No secrets, invitation tokens, payment credentials or private photographs in source control.
-- Admin roles are provisioned server-side; guests cannot promote themselves.
-- A passing CI build is **not** a staging deployment.
+## Cloud state
+- Vercel project `saugaat` exists with protected Preview deployments. Preview URL: `https://saugaat-759wdfexn-akashsahu4252-4042.vercel.app`. Do not confuse this with production.
+- Neon project `saugaat-staging` has database `saugaat_staging` (Singapore). Initial SQL applied with 16 application tables, 11 enums and 25 foreign-key relationships.
+- **Critical:** Prisma `_prisma_migrations` history has **not** been baselined on the real staging database. The official `migrate resolve --applied 20261118_init` procedure passed in isolated CI but a protected remote write attempt was blocked. See `docs/STAGING_DEPLOYMENT.md` for owner-run steps. Do not run `migrate deploy` against the existing tables before baseline.
+- Recovery branch `saugaat-baseline-recovery-20261119` exists. This is not a verified backup-restoration drill.
+- Private Neon Storage bucket `saugaat-memories-staging` exists but **upload system is disabled** by `PRIVATE_MEDIA_UPLOADS_ENABLED=false`, including API fail-closed checks.
+- Latest known completed CI run on commit `187fb776` passed; future commits require fresh CI verification.
+- Live payments remain disabled.
 
-## Next action — staging setup
-See [docs/STAGING_DEPLOYMENT.md](STAGING_DEPLOYMENT.md) for exact deployment prerequisites and acceptance checklist. Vercel and Neon connections require repository-owner authorization. The current CI uses ephemeral `prisma db push`; production needs reviewed migrations and `prisma migrate deploy` before launch.
+## Launch gates (must pass before public release)
+- [ ] Record and verify Prisma migration baseline in **existing** Neon staging database.
+- [ ] Compare schema with migration, rehearse backup restore in an isolated Neon branch.
+- [ ] Configure private storage credential and test safe media upload, verification, moderation, download, deletion and revocation. Keep uploads disabled until finished.
+- [ ] Implement and test password reset, authentication/abuse rate limits, privacy notice and account/data deletion.
+- [ ] Verify cross-event permissions, admin audit logs, guest-invite revocation and reservation concurrency on managed PostgreSQL.
+- [ ] Run full authenticated end-to-end tests on Neon staging plus manual Android Chrome/iOS Safari accessibility checks.
+- [ ] Set monitoring/alerts, incident playbook, backup owner and recovery procedure.
+- [ ] Separate production environment/database/secrets from staging. Gate production promotions behind passing checks.
+- [ ] Complete privacy/consent/legal reviews before inviting real users.
+- [ ] Separately review payment-provider onboarding, merchant terms and refunds before ever enabling actual money collection. A useful registry beta can launch with payments disabled and pledges clearly labeled.
+
+## Detailed docs
+- [Staging deployment and Prisma owner-run baseline](STAGING_DEPLOYMENT.md)
+- [Private media storage roll-out](PRIVATE_MEDIA_STORAGE.md)
+- [Milestone 8 release gates](MILESTONE_8.md)
