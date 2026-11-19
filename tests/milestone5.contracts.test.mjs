@@ -25,9 +25,10 @@ test('Guest invitation has separate private gallery permissions defaulting to fa
   assert.match(invite,/revokedAt: null, expiresAt: \{ gt: new Date\(\) \}/);
 });
 test('Uploads are private, short-lived, content type constrained, and size checked', () => {
-  assert.match(storage,/createPresignedPost/);
-  assert.match(storage,/Expires: 300/);
-  assert.match(storage,/content-length-range/);
+  assert.match(storage,/PutObjectCommand/);
+  assert.match(storage,/expiresIn: 300/);
+  assert.match(storage,/ContentLength: expectedBytes/);
+  assert.match(storage,/head.ContentLength === expectedSize/);
   assert.match(storage,/image\/jpeg/);
   assert.match(storage,/video\/mp4/);
   assert.doesNotMatch(storage,/ACL:\s*'public-read'/);
@@ -55,7 +56,8 @@ test('Host-only approval and deletion including object cleanup', () => {
 });
 test('Browser uploads directly, preserving private server credentials', () => {
   assert.match(ui,/fetch\(plan.upload.url/);
-  assert.match(ui,/FormData\(\)/);
+  assert.match(ui,/method: 'PUT'/);
+  assert.match(ui,/body: file/);
   assert.match(ui,/host must approve/i);
   assert.doesNotMatch(ui,/S3_ACCESS_KEY_ID/);
 });
