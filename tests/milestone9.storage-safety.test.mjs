@@ -26,3 +26,17 @@ test('default config disables uploads separately from required private storage',
   assert.match(config, /^PAYMENTS_MODE=disabled$/m);
   assert.match(config, /^REQUIRE_PRIVATE_MEDIA_STORAGE=false$/m);
 });
+
+test('private storage uses signed PUT and checks completed object metadata', () => {
+  const storage = src('src/lib/memory-storage.ts');
+  const uploader = src('src/components/memory-uploader.tsx');
+  const intent = src('src/app/api/memories/upload-intent/route.ts');
+  assert.match(storage, /new PutObjectCommand/);
+  assert.match(storage, /expiresIn: 300/);
+  assert.match(storage, /ContentLength: expectedBytes/);
+  assert.match(storage, /head.ContentLength === expectedSize/);
+  assert.doesNotMatch(storage, /createPresignedPost/);
+  assert.match(uploader, /method: 'PUT'/);
+  assert.doesNotMatch(uploader, /multipart\.append/);
+  assert.match(intent, /signUpload\(key, mimeType, sizeBytes\)/);
+});
