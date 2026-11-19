@@ -9,6 +9,9 @@ test('media upload API fails closed until an explicit opt-in', () => {
   assert.match(route, /PRIVATE_MEDIA_UPLOADS_ENABLED !== 'true'/);
   assert.match(route, /status: 503/);
   assert.match(route, /Cache-Control': 'no-store'/);
+  const finish = src('src/app/api/memories/complete/route.ts');
+  assert.match(finish, /PRIVATE_MEDIA_UPLOADS_ENABLED !== 'true'/);
+  assert.match(finish, /status: 503/);
 });
 
 test('guest and host pages do not expose upload UI unless explicitly enabled', () => {
