@@ -5,6 +5,7 @@ import { validateObject } from '@/lib/memory-storage';
 
 export const runtime = 'nodejs';
 export async function POST(req: NextRequest) {
+  if (process.env.PRIVATE_MEDIA_UPLOADS_ENABLED !== 'true') return NextResponse.json({ error: 'Private media uploads are not enabled' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
   const expectedOrigin = process.env.NEXT_PUBLIC_SITE_URL ? new URL(process.env.NEXT_PUBLIC_SITE_URL).origin : req.nextUrl.origin;
   if (req.headers.get('origin') !== expectedOrigin) return NextResponse.json({ error: 'Invalid origin' }, { status: 403 });
   if (!(req.headers.get('content-type') || '').startsWith('application/json')) return NextResponse.json({ error: 'JSON required' }, { status: 415 });
