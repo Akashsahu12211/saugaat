@@ -321,3 +321,11 @@ model AdminAuditLog {
   @@index([createdAt])
   @@index([actorId, createdAt])
 }
+
+/** Atomic, privacy-preserving temporary buckets for auth abuse resistance. */
+model AuthThrottle {
+  id       String   @id @db.VarChar(64)
+  attempts Int      @default(0)
+  resetAt  DateTime
+  @@index([resetAt])
+}
