@@ -14,19 +14,19 @@
 | M5 | Private Shared Memories and moderation | Implemented with uploads safety-disabled | Neon private bucket credential wiring, signed upload compatibility, CORS, quarantine/malware scans, deletion and guest-access QA |
 | M6 | Group gifting | Pledge bookkeeping implemented, no real payment collection | Provider onboarding, payment reconciliation, refund/dispute operations, financial/legal compliance |
 | M7 | Admin reports and moderation | Implemented | Admin provisioning, audit logging and abuse handling in staging |
-| M8 | CI, preflight and protected staging preview | Implemented; CI passed, Preview READY | Finish actual migration-history baseline, backup restore drill, operational security, real staging acceptance and launch gate |
+| M8 | CI, preflight and protected staging preview | Implemented; CI passed, Preview READY | Backup restore drill, operational security, real staging acceptance and launch gate |
 
 ## Cloud state
 - Vercel project `saugaat` exists with protected Preview deployments. Preview URL: `https://saugaat-759wdfexn-akashsahu4252-4042.vercel.app`. Do not confuse this with production.
 - Neon project `saugaat-staging` has database `saugaat_staging` (Singapore). Initial SQL applied with 16 application tables, 11 enums and 25 foreign-key relationships.
-- **Critical:** Prisma `_prisma_migrations` history has **not** been baselined on the real staging database. The official `migrate resolve --applied 20261118_init` procedure passed in isolated CI but a protected remote write attempt was blocked. See `docs/STAGING_DEPLOYMENT.md` for owner-run steps. Do not run `migrate deploy` against the existing tables before baseline.
+- **Completed:** Staging Prisma baseline `20261118_init` was marked applied by the project owner with the official CLI. Neon independently confirms one successful `_prisma_migrations` record and all 16 application tables intact; Prisma status reported database schema up to date.
 - Recovery branch `saugaat-baseline-recovery-20261119` exists. This is not a verified backup-restoration drill.
 - Private Neon Storage bucket `saugaat-memories-staging` exists but **upload system is disabled** by `PRIVATE_MEDIA_UPLOADS_ENABLED=false`, including API fail-closed checks.
 - Latest known completed CI run on commit `187fb776` passed; future commits require fresh CI verification.
 - Live payments remain disabled.
 
 ## Launch gates (must pass before public release)
-- [ ] Record and verify Prisma migration baseline in **existing** Neon staging database.
+- [x] Record and verify Prisma migration baseline in **existing** Neon staging database (owner CLI and independent Neon SQL verification, 19 Nov 2026).
 - [ ] Compare schema with migration, rehearse backup restore in an isolated Neon branch.
 - [ ] Configure private storage credential and test safe media upload, verification, moderation, download, deletion and revocation. Keep uploads disabled until finished.
 - [ ] Implement and test password reset, authentication/abuse rate limits, privacy notice and account/data deletion.
