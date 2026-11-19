@@ -19,11 +19,13 @@ export function MemoryUploader({ eventId }: { eventId: string }) {
       });
       const plan = await response.json();
       if (!response.ok) throw new Error(plan.error || 'Unable to prepare upload');
-      const multipart = new FormData();
-      Object.entries(plan.upload.fields as Record<string, string>).forEach(([key, value]) => multipart.append(key, value));
-      multipart.append('file', file);
+      if (plan.upload.method !== 'PUT') throw new Error('Unsupported private upload method');
       setNotice('Uploading privately…');
-      const storageResponse = await fetch(plan.upload.url, { method: 'POST', body: multipart });
+      const storageResponse = await fetch(plan.upload.url, {
+        method: 'PUT',
+        headers: plan.upload.headers as Record<string, string>,
+        body: file,
+      });
       if (!storageResponse.ok) throw new Error('Storage upload failed. Check bucket CORS and credentials.');
       const complete = await fetch('/api/memories/complete', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
