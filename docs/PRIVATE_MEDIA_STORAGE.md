@@ -7,11 +7,14 @@
 - New default-deny flag: `PRIVATE_MEDIA_UPLOADS_ENABLED=false`. The upload-intent API returns HTTP 503 while disabled; owner and guest upload controls are hidden.
 - Payment processing remains disabled.
 
-## Integration blocker
-Saugaat's current private-media implementation uses AWS SDK `createPresignedPost` and direct HTML multipart POST uploads. Neon Storage documents S3-compatible signed PUT via `PutObjectCommand` and `getSignedUrl`, but **multipart POST policy compatibility has not been verified**. Do not enable the flag just because an S3 bucket exists.
+## Presigned upload compatibility — code updated, integration unverified
+
+Saugaat now issues branch-scoped AWS SDK `PutObjectCommand` **presigned PUT** URLs (five-minute expiry) instead of S3 presigned HTML POST policies, matching Neon's documented S3-compatible PUT approach. The browser uploads the binary directly with the exact declared MIME, then the completion endpoint checks S3 HEAD metadata for Content-Type and byte count. The API still denies uploads unless `PRIVATE_MEDIA_UPLOADS_ENABLED=true`.
+
+**Do not turn uploads on yet.** Browser CORS, scoped storage credential, cross-origin failures, malicious-content quarantine/scanning, exact object validation and deletion permissions have not passed live integration testing. A presigned PUT URL is not a substitute for content inspection or a full upload-size security boundary.
 
 ## Required checks before activating uploads
-1. Confirm the exact supported presign method and CORS behavior for the currently deployed Neon Storage version; adapt Saugaat client and server if presigned PUT is required.
+1. [x] Update client/server to documented S3 presigned PUT API. [ ] Verify actual PUT and browser CORS behavior on a restricted Neon storage test object.
 2. Provision a least-privilege branch-scoped credential. Add `S3_ENDPOINT`, `S3_REGION=ap-southeast-1`, `S3_BUCKET=saugaat-memories-staging`, `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY` as *encrypted Preview-only* Vercel environment variables; never commit or paste credentials in chat.
 3. Ensure allowed origin exactly matches the intended HTTPS Preview origin. Test cross-origin rejection and signed URL expiry.
 4. Verify upload validation using authentic JPEG/PNG/WebP/MP4 magic bytes, size, MIME and content filtering. Implement malware/quarantine handling; extension and client-declared MIME checks alone are insufficient.
