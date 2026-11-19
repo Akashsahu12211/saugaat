@@ -23,7 +23,7 @@
 
 Do not rerun `migrate resolve` for this already-applied migration. Use reviewed `prisma migrate deploy` for **future new migrations only**, after schema review, recovery backup and staging testing. Never use `prisma db push` on persistent staging or production.
 
-Recovery branch `saugaat-baseline-recovery-20261119` is retained as a pre-baseline snapshot; a **separate tested restore drill is still required**.
+Recovery branch `saugaat-baseline-recovery-20261119` is retained as a pre-baseline snapshot; a **full restore/recovery-time drill is still required**. A read-only recovery snapshot verification completed on 19 November 2026: the isolated branch contains 16 application tables, 25 foreign keys and no `_prisma_migrations` history (it predates the baseline), and a schema diff against current staging showed only the new Prisma migration history table/index. The disposable read-only compute endpoint was deleted after testing; staging main was never overwritten.
 
 ## Verified staging environment
 
@@ -35,7 +35,8 @@ Recovery branch `saugaat-baseline-recovery-20261119` is retained as a pre-baseli
 - [x] Official Prisma migration baseline in live Neon staging; independently verified.
 - [ ] Full authenticated E2E browser journey on Neon staging, isolated QA identities only.
 - [ ] Private object storage, malware scan/quarantine, media deletion and account recovery tests.
-- [ ] Backup restore drill, request throttling, privacy notice and security review.
+- [x] Isolated pre-baseline recovery snapshot read test and schema comparison.
+- [ ] Full backup restore/recovery-time drill, request throttling, privacy notice and security review.
 - [ ] Production deploy; live payments disabled.
 
 ## Staging acceptance checklist
