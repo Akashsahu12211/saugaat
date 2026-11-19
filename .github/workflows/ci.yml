@@ -61,8 +61,19 @@ jobs:
           node-version: '22.18.0'
       - run: npm install
       - run: npm run db:generate
-      # Emulate the existing Saugaat staging state: tables pre-date Prisma history.
-      - run: npx prisma db push
+      # Recreate the already-initialized staging state from the first migration only.
+      - name: Recreate original schema without migration history
+        run: |
+          node - <<'NODE'
+          const { Client } = require('pg');
+          const { readFileSync } = require('node:fs');
+          (async () => {
+            const db = new Client({ connectionString: process.env.DATABASE_URL });
+            await db.connect();
+            try { await db.query(readFileSync('prisma/migrations/20261118_init/migration.sql', 'utf8')); }
+            finally { await db.end(); }
+          })().catch(e => { console.error(e.message); process.exitCode = 1; });
+          NODE
       - name: Verify the database has schema but no Prisma migration history
         run: |
           node - <<'NODE'
@@ -78,8 +89,10 @@ jobs:
           })().catch(e => { console.error(e.message); process.exitCode = 1; });
           NODE
       - run: npx prisma migrate resolve --applied 20261118_init
+      # The new additive auth rate-limit table must be created with versioned SQL.
+      - run: npx prisma migrate deploy
       - run: npx prisma migrate status
-      - name: Verify baseline recorded exactly once
+      - name: Verify baseline and new auth migration both applied
         run: |
           node - <<'NODE'
           const { Client } = require('pg');
@@ -87,9 +100,11 @@ jobs:
             const db = new Client({ connectionString: process.env.DATABASE_URL });
             await db.connect();
             try {
-              const { rows } = await db.query("SELECT migration_name, finished_at IS NOT NULL AS applied FROM _prisma_migrations");
-              if (rows.length !== 1 || rows[0].migration_name !== '20261118_init' || !rows[0].applied) throw Error('Prisma migration baseline not recorded once');
-              console.log('Official migration baseline verified');
+              const { rows } = await db.query("SELECT migration_name, finished_at IS NOT NULL AS applied FROM _prisma_migrations ORDER BY migration_name");
+              if (rows.length !== 2 || rows[0].migration_name !== '20261118_init' || rows[1].migration_name !== '20261119_auth_throttle' || !rows.every(x => x.applied)) throw Error('Expected both migrations applied');
+              const count = await db.query("SELECT count(*)::int AS n FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE'");
+              if (count.rows[0].n !== 18) throw Error('Expected 16 initial tables, AuthThrottle, and Prisma history');
+              console.log('Official baseline and sequential auth migration verified');
             } finally { await db.end(); }
           })().catch(e => { console.error(e.message); process.exitCode = 1; });
           NODE
