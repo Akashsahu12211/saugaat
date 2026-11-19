@@ -17,6 +17,7 @@ const input = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  if (process.env.PRIVATE_MEDIA_UPLOADS_ENABLED !== 'true') return NextResponse.json({ error: 'Private media uploads are not enabled' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });
   // Strict same-origin JSON request; browser cookies cannot be used by third-party sites.
   const origin = req.headers.get('origin');
   const expectedOrigin = process.env.NEXT_PUBLIC_SITE_URL ? new URL(process.env.NEXT_PUBLIC_SITE_URL).origin : req.nextUrl.origin;
