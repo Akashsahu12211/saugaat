@@ -1,6 +1,5 @@
 import 'server-only';
-import { S3Client, HeadObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
-import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
+import { S3Client, PutObjectCommand, HeadObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 /** Private object storage; no public-read ACLs or unscoped GET URLs. */
@@ -32,15 +31,13 @@ export function verifyMediaInput(mime: string, bytes: number, album: string, fil
   return limit.extension;
 }
 
-/** Exact MIME + upload object key; browser POST must stay within size constraints. */
-export async function signUpload(key: string, mime: string, maxBytes: number) {
+/** Branch-scoped private S3 presigned PUT. Uploads remain feature-gated off until integration QA. */
+export async function signUpload(key: string, mime: string, expectedBytes: number) {
   const { client, bucket } = storage();
-  return createPresignedPost(client, {
-    Bucket: bucket, Key: key,
-    Fields: { 'Content-Type': mime },
-    Conditions: [['content-length-range', 1, maxBytes + 64 * 1024], ['eq', '$Content-Type', mime]],
-    Expires: 300,
-  });
+  const url = await getSignedUrl(client, new PutObjectCommand({
+    Bucket: bucket, Key: key, ContentType: mime, ContentLength: expectedBytes,
+  }), { expiresIn: 300 });
+  return { method: 'PUT' as const, url, headers: { 'Content-Type': mime } };
 }
 export async function validateObject(key: string, mime: string, expectedSize: number): Promise<boolean> {
   const { client, bucket } = storage();
