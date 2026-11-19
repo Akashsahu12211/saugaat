@@ -7,7 +7,7 @@
 
 | Milestone | Scope | Code status | Remaining release gate |
 | --- | --- | --- | --- |
-| M1 | Signup, login, host dashboard, event creation | Implemented; CI tested | Password reset, rate limiting, account removal, managed-staging real browser tests |
+| M1 | Signup, login, host dashboard, event creation | Implemented; CI tested | Password reset, account removal, managed-staging real browser tests; rate-limit code deployed but Prisma history needs reconciliation |
 | M2 | Guest registry, RSVP, gift reservations | Implemented; CI browser tested | Managed-staging reservation concurrency and abuse tests |
 | M3 | Co-hosts and gift tracking | Implemented | Cross-event role/permission and purchase-state tests |
 | M4 | WhatsApp share links, QR and revocable invitations | Implemented; invite flow CI tested | Staging revocation/expiry and misuse tests |
@@ -23,6 +23,7 @@
 - Recovery branch `saugaat-baseline-recovery-20261119` passed an isolated read-only snapshot verification: 16 tables, 25 foreign keys and zero expected Prisma history entries (snapshot predates baseline). A full destructive restore/recovery-time drill has **not** been performed.
 - Private Neon Storage bucket `saugaat-memories-staging` exists but **upload system is disabled** by `PRIVATE_MEDIA_UPLOADS_ENABLED=false`, including API fail-closed checks.
 - Latest known completed CI run on commit `187fb776` passed; future commits require fresh CI verification.
+- Auth attempt throttle migration SQL applied on staging and Preview updated/healthy (19 Nov 2026); the official Prisma migration-history registration for `20261119_auth_throttle` is still pending. See `docs/AUTH_HARDENING.md`.
 - Live payments remain disabled.
 
 ## Launch gates (must pass before public release)
