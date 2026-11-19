@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { memoryAccess } from '@/lib/memory-access';
-import { MEDIA_TYPES, signUpload, verifyMediaInput } from '@/lib/memory-storage';
+import { signUpload, verifyMediaInput } from '@/lib/memory-storage';
 import { persistGuestIdentity } from '@/lib/guest';
 
 export const runtime = 'nodejs';
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
   const key = `private/events/${eventId}/${randomUUID()}.${ext}`;
   const uploadExpiresAt = new Date(Date.now() + 5 * 60_000);
   // Sign before persisting; failed configuration never leaves a pending DB row.
-  const presigned = await signUpload(key, mimeType, MEDIA_TYPES[mimeType].max);
+  const presigned = await signUpload(key, mimeType, sizeBytes);
   const media = await db.media.create({ data: {
     eventId, uploaderId: access.user?.id ?? null, visitorId: access.guest.id,
     storageKey: key, mimeType, sizeBytes, fileName, album: album.trim(), uploadExpiresAt,
